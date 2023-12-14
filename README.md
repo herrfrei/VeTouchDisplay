@@ -1,4 +1,4 @@
-# VeElecrowDisplay - Victron VenusOs package for 5" HDMI 800 x 480 Capacitive Touch LCD Display
+# Victron VenusOs package for 5" HDMI 800 x 480 Capacitive Touch LCD Display
 
 ## Introduction
 
