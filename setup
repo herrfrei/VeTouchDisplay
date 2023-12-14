@@ -79,10 +79,11 @@ if [ $scriptAction == 'INSTALL' ] ; then
 	display_rotate=0
 	if [ -f $setupOptionsDir/rotateDisplay ]; then
 		display_rotate=2
+	fi
 	gpioPin=23
 	if [ -f $setupOptionsDir/backlight_gpio_pin ]; then
 		gpioPin=$(cat "$setupOptionsDir/backlight_gpio_pin")
-		
+	fi
 	# install overlay only if it doesn't exist
     [ -f "$overlayFile" ] || logMessage "installing Display Backlight overlay" && rebootNeeded=true && updateActiveFile "$overlayFile"
 
@@ -137,7 +138,7 @@ if [ $scriptAction == 'INSTALL' ] ; then
 	# enable screen saver (blanking) from the Venus
 	if [ "$gpioPin" != "" ]; then
 		if [ ! -e "$blankDeviceFile" ] || [ $(grep -c "/sys/class/leds/backlight/brightness" "$blankDeviceFile") == 0 ]; then
-			logMessage "setting display blanking to $blankDevice"
+			logMessage "setting display blanking to GPIO pin $gpioPin"
 			echo "/sys/class/leds/backlight/brightness" > "$blankDeviceFile"
 			restartGui=true
 		fi
