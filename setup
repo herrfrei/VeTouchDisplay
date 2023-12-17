@@ -79,21 +79,22 @@ if [ $scriptAction == 'INSTALL' ] ; then
 	display_rotate=0
 	if [ -f $setupOptionsDir/rotateDisplay ]; then
 		display_rotate=2
+	fi
 	gpioPin=23
 	if [ -f $setupOptionsDir/backlight_gpio_pin ]; then
 		gpioPin=$(cat "$setupOptionsDir/backlight_gpio_pin")
-		
+	fi
 	# install overlay only if it doesn't exist
     [ -f "$overlayFile" ] || logMessage "installing Display Backlight overlay" && rebootNeeded=true && updateActiveFile "$overlayFile"
 
-    if [ $(grep -c "VeElecrowDisplay" "$configFile") == 0 ]; then
-        logMessage "activating VeElecrowDisplay settings in $configFile"
+    if [ $(grep -c "VeTouchDisplay" "$configFile") == 0 ]; then
+        logMessage "activating VeTouchDisplay settings in $configFile"
 		cp $configFile $configFile.tmp
 		# remove any previouos lines added by this script
-		sed -i -e "/#### begin VeElecrowDisplay/,/#### end VeElecrowDisplay/d" "$configFile.tmp"
+		sed -i -e "/#### begin VeTouchDisplay/,/#### end VeTouchDisplay/d" "$configFile.tmp"
 
 		echo "" >> "$configFile.tmp"
-        echo "#### begin VeElecrowDisplay" >> "$configFile.tmp"	
+        echo "#### begin VeTouchDisplay" >> "$configFile.tmp"	
 		echo "# Elecrow RC050 5 inch HDMI 800 x 480 Capacitive Touch LCD Display for Raspberry Pi/ PC/ SONY PS4" >> "$configFile.tmp"
 		echo "# https://www.elecrow.com/wiki/index.php?title=RC050_5_inch_HDMI_800_x_480_Capacitive_Touch_LCD_Display_for_Raspberry_Pi/_PC/_SONY_PS4" >> "$configFile.tmp"
 		echo "hdmi_force_hotplug=1" >> "$configFile.tmp"
@@ -110,7 +111,7 @@ if [ $scriptAction == 'INSTALL' ] ; then
 		echo "# for backlight on / off" >> "$configFile.tmp"
 		echo "# gpio-led overlay allows to invert the backlight (echo 0 for on and 1 for off, like backlight blanking)" >> "$configFile.tmp"
 		echo "dtoverlay=gpio-led,gpio=$gpioPin,label=backlight,active_low=1" >> "$configFile.tmp"
-        echo "#### end VeElecrowDisplay" >> "$configFile.tmp"
+        echo "#### end VeTouchDisplay" >> "$configFile.tmp"
 		echo "" >> "$configFile.tmp"
 		rebootNeeded=true
     fi
@@ -137,7 +138,7 @@ if [ $scriptAction == 'INSTALL' ] ; then
 	# enable screen saver (blanking) from the Venus
 	if [ "$gpioPin" != "" ]; then
 		if [ ! -e "$blankDeviceFile" ] || [ $(grep -c "/sys/class/leds/backlight/brightness" "$blankDeviceFile") == 0 ]; then
-			logMessage "setting display blanking to $blankDevice"
+			logMessage "setting display blanking to GPIO pin $gpioPin"
 			echo "/sys/class/leds/backlight/brightness" > "$blankDeviceFile"
 			restartGui=true
 		fi
@@ -171,8 +172,8 @@ if [ $scriptAction == 'UNINSTALL' ] ; then
 
     # remove mods from configFile - do not use restore in case other mods were made manually
     if [ -f "$configFile" ]; then
-        if [ $(grep -c "#### begin VeElecrowDisplay" "$configFile") != 0 ]; then
-            sed -i -e '/#### begin VeElecrowDisplay/,/#### end VeElecrowDisplay/d' "$configFile"
+        if [ $(grep -c "#### begin VeTouchDisplay" "$configFile") != 0 ]; then
+            sed -i -e '/#### begin VeTouchDisplay/,/#### end VeTouchDisplay/d' "$configFile"
             rebootNeeded=true
         fi
     fi
