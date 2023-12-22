@@ -87,34 +87,28 @@ if [ $scriptAction == 'INSTALL' ] ; then
 	# install overlay only if it doesn't exist
     [ -f "$overlayFile" ] || logMessage "installing Display Backlight overlay" && rebootNeeded=true && updateActiveFile "$overlayFile"
 
-    if [ $(grep -c "VeTouchDisplay" "$configFile") == 0 ]; then
-        logMessage "activating VeTouchDisplay settings in $configFile"
-		cp $configFile $configFile.tmp
-		# remove any previouos lines added by this script
-		sed -i -e "/#### begin VeTouchDisplay/,/#### end VeTouchDisplay/d" "$configFile.tmp"
-
-		echo "" >> "$configFile.tmp"
-        echo "#### begin VeTouchDisplay" >> "$configFile.tmp"	
-		echo "# Elecrow RC050 5 inch HDMI 800 x 480 Capacitive Touch LCD Display for Raspberry Pi/ PC/ SONY PS4" >> "$configFile.tmp"
-		echo "# https://www.elecrow.com/wiki/index.php?title=RC050_5_inch_HDMI_800_x_480_Capacitive_Touch_LCD_Display_for_Raspberry_Pi/_PC/_SONY_PS4" >> "$configFile.tmp"
-		echo "hdmi_force_hotplug=1" >> "$configFile.tmp"
-		echo "max_usb_current=1" >> "$configFile.tmp"
-		echo "hdmi_drive=1" >> "$configFile.tmp"
-		echo "hdmi_group=2" >> "$configFile.tmp"
-		echo "hdmi_mode=1" >> "$configFile.tmp"
-		echo "hdmi_mode=87" >> "$configFile.tmp"
-		echo "hdmi_cvt=800 480 60 6 0 0 0" >> "$configFile.tmp"
-		echo "dtoverlay=ads7846,cs=1,penirq=25,penirq_pull=2,speed=50000,keep_vref_on=0,swapxy=0,pmax=255,xohms=150,xmin=200,xmax=3900,ymin=200,ymax=3900" >> "$configFile.tmp" 
-		echo "display_rotate=$display_rotate" >> "$configFile.tmp"
-		echo "framebuffer_width=800" >> "$configFile.tmp"
-		echo "framebuffer_height=480" >> "$configFile.tmp"
-		echo "# for backlight on / off" >> "$configFile.tmp"
-		echo "# gpio-led overlay allows to invert the backlight (echo 0 for on and 1 for off, like backlight blanking)" >> "$configFile.tmp"
-		echo "dtoverlay=gpio-led,gpio=$gpioPin,label=backlight,active_low=1" >> "$configFile.tmp"
-        echo "#### end VeTouchDisplay" >> "$configFile.tmp"
-		echo "" >> "$configFile.tmp"
-		rebootNeeded=true
-    fi
+	logMessage "activating VeTouchDisplay settings in $configFile"
+	cp $configFile $configFile.tmp
+	# remove any previouos lines added by this script
+	sed -i -e "/#### begin VeTouchDisplay/,/#### end VeTouchDisplay/d" "$configFile.tmp"
+		      
+	echo "" >> "$configFile.tmp"
+	echo "#### begin VeTouchDisplay" >> "$configFile.tmp"	
+	echo "# Elecrow RC050 5 inch HDMI 800 x 480 Capacitive Touch LCD Display for Raspberry Pi/ PC/ SONY PS4" >> "$configFile.tmp"
+	echo "# https://www.elecrow.com/wiki/index.php?title=RC050_5_inch_HDMI_800_x_480_Capacitive_Touch_LCD_Display_for_Raspberry_Pi/_PC/_SONY_PS4" >> "$configFile.tmp"
+	echo "hdmi_force_hotplug=1" >> "$configFile.tmp"
+	echo "max_usb_current=1" >> "$configFile.tmp"
+	echo "hdmi_drive=1" >> "$configFile.tmp"
+	echo "hdmi_group=2" >> "$configFile.tmp"
+	echo "hdmi_mode=1" >> "$configFile.tmp"
+	echo "hdmi_mode=87" >> "$configFile.tmp"
+	echo "hdmi_cvt=800 480 60 6 0 0 0" >> "$configFile.tmp"
+	echo "display_rotate=$display_rotate" >> "$configFile.tmp"
+	echo "framebuffer_width=800" >> "$configFile.tmp"
+	echo "framebuffer_height=480" >> "$configFile.tmp"
+	echo "# for backlight on / off" >> "$configFile.tmp"
+	echo "# gpio-led overlay allows to invert the backlight (echo 0 for on and 1 for off, like backlight blanking)" >> "$configFile.tmp"
+	echo "dtoverlay=gpio-led,gpio=$gpioPin,label=backlight,active_low=1" >> "$configFile.tmp"	
 	# comment dtoverlay=vc4-kms-v3c for raspberrypi4 if active
 	if [ $machine == "raspberrypi4" ]; then
 		if [ $(grep -c "^\s*dtoverlay=vc4-kms-v3c" "$configFile") != 0 ]; then
@@ -123,6 +117,8 @@ if [ $scriptAction == 'INSTALL' ] ; then
 			rebootNeeded=true
 		fi
 	fi
+	echo "#### end VeTouchDisplay" >> "$configFile.tmp"
+	echo "" >> "$configFile.tmp"
 	# detect changes
     cmp -s $configFile "$configFile.tmp" > /dev/null
     if (( $? == 1 )); then
