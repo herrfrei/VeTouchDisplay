@@ -22,134 +22,120 @@ source "/data/SetupHelper/HelperResources/IncludeHelpers"
 
 #### running manually and OK to proceed - prompt for input
 if [ $scriptAction == 'NONE' ] ; then
-    # display innitial message
-    echo
-    echo "This package makes the following modifications:"
-    echo "  - installs the overlay file for the GPIO LED (used for backlight)"
-	echo "  - adds the display setup and backlight overlay to config.txt"    
-	echo
-	yesNoPrompt "Do you want to continue (y/n)?: "
-	if $yesResponse ; then
-		scriptAction='INSTALL'
-		
-		yesNoPrompt "Rotate the display 180 degrees (y/n)?: "
-		if $yesResponse ; then
-			touch "$setupOptionsDir/rotateDisplay"
-		else
-			rm -f "$setupOptionsDir/rotateDisplay"
-		fi
-		yesNoPrompt "Enter custom GPIO pin for backlight (default: 23) (y/n)?: "
-		if $yesResponse ; then
-			read -p "enter GPIO pin to use: " gpioPin
-			if [ "$gpioPin" != "" ]; then
-				echo $gpioPin > "$setupOptionsDir/backlight_gpio_pin"
-			else
-				rm -f "$setupOptionsDir/backlight_gpio_pin"
-			fi
-		else
-			rm -f "$setupOptionsDir/backlight_gpio_pin"
-		fi
-	fi
+  # display innitial message
+  echo
+  echo "This package makes the following modifications:"
+  echo "  - installs the overlay file for the GPIO LED (used for backlight)"
+  echo "  - adds the display setup and backlight overlay to config.txt"    
+  echo
+  yesNoPrompt "Do you want to continue (y/n)?: "
+  if $yesResponse ; then
+    scriptAction='INSTALL'
+    
+    yesNoPrompt "Rotate the display 180 degrees (y/n)?: "
+    if $yesResponse ; then
+      touch "$setupOptionsDir/rotateDisplay"
+    else
+      rm -f "$setupOptionsDir/rotateDisplay"
+    fi
+    yesNoPrompt "Enter custom GPIO pin for backlight (default: 23) (y/n)?: "
+    if $yesResponse ; then
+      read -p "enter GPIO pin to use: " gpioPin
+      if [ "$gpioPin" != "" ]; then
+        echo $gpioPin > "$setupOptionsDir/backlight_gpio_pin"
+      else
+        rm -f "$setupOptionsDir/backlight_gpio_pin"
+      fi
+    else
+      rm -f "$setupOptionsDir/backlight_gpio_pin"
+    fi
+  fi
 fi
 #### installing
 if [ $scriptAction == 'INSTALL' ] ; then
-	display_rotate=0
-	if [ -f $setupOptionsDir/rotateDisplay ]; then
-		display_rotate=2
-	fi
-	gpioPin=23
-	if [ -f $setupOptionsDir/backlight_gpio_pin ]; then
-		gpioPin=$(cat "$setupOptionsDir/backlight_gpio_pin")
-	fi
-	# install overlay only if it doesn't exist
-    [ -f "$overlayFile" ] || logMessage "installing Display Backlight overlay" && rebootNeeded=true && updateActiveFile "$overlayFile"
+  display_rotate=0
+  if [ -f $setupOptionsDir/rotateDisplay ]; then
+    display_rotate=2
+  fi
+  gpioPin=23
+  if [ -f $setupOptionsDir/backlight_gpio_pin ]; then
+    gpioPin=$(cat "$setupOptionsDir/backlight_gpio_pin")
+  fi
+  # install overlay only if it doesn't exist
+  [ -f "$overlayFile" ] || logMessage "installing Display Backlight overlay" && rebootNeeded=true && updateActiveFile "$overlayFile"
 
-	logMessage "activating VeTouchDisplay settings in $configFile"
-	cp $configFile $configFile.tmp
-	# remove any previouos lines added by this script
-	sed -i -e "/#### begin VeTouchDisplay/,/#### end VeTouchDisplay/d" "$configFile.tmp"
-		      
-	echo "" >> "$configFile.tmp"
-	echo "#### begin VeTouchDisplay" >> "$configFile.tmp"	
-	echo "# Elecrow RC050 5 inch HDMI 800 x 480 Capacitive Touch LCD Display for Raspberry Pi/ PC/ SONY PS4" >> "$configFile.tmp"
-	echo "# https://www.elecrow.com/wiki/index.php?title=RC050_5_inch_HDMI_800_x_480_Capacitive_Touch_LCD_Display_for_Raspberry_Pi/_PC/_SONY_PS4" >> "$configFile.tmp"
-	echo "hdmi_force_hotplug=1" >> "$configFile.tmp"
-	echo "max_usb_current=1" >> "$configFile.tmp"
-	echo "hdmi_drive=1" >> "$configFile.tmp"
-	echo "hdmi_group=2" >> "$configFile.tmp"
-	echo "hdmi_mode=1" >> "$configFile.tmp"
-	echo "hdmi_mode=87" >> "$configFile.tmp"
-	echo "hdmi_cvt=800 480 60 6 0 0 0" >> "$configFile.tmp"
-	echo "display_rotate=$display_rotate" >> "$configFile.tmp"
-	echo "framebuffer_width=800" >> "$configFile.tmp"
-	echo "framebuffer_height=480" >> "$configFile.tmp"
-	echo "# for backlight on / off" >> "$configFile.tmp"
-	echo "# gpio-led overlay allows to invert the backlight (echo 0 for on and 1 for off, like backlight blanking)" >> "$configFile.tmp"
-	echo "dtoverlay=gpio-led,gpio=$gpioPin,label=backlight,active_low=1" >> "$configFile.tmp"	
-	# comment dtoverlay=vc4-kms-v3c for raspberrypi4 if active
-	if [ $machine == "raspberrypi4" ]; then
-		if [ $(grep -c "^\s*dtoverlay=vc4-kms-v3c" "$configFile") != 0 ]; then
-			logMessage "disabling dtoverlay=vc4-kms-v3c on Raspberry Pi 4"
-			sed -i 's/^\s*dtoverlay=vc4-kms-v3c/#dtoverlay=vc4-kms-v3c/g' "$configFile.tmp"
-			rebootNeeded=true
-		fi
-	fi
-	echo "#### end VeTouchDisplay" >> "$configFile.tmp"
-	echo "" >> "$configFile.tmp"
-	# detect changes
-    cmp -s $configFile "$configFile.tmp" > /dev/null
-    if (( $? == 1 )); then
-		logMessage "updating config.txt"
-        updateActiveFile "$configFile.tmp" "$configFile"
-        if $thisFileUpdated ; then
-            rebootNeeded=true
-        fi
-    else
-        rm $configFile.tmp
+  if [ $(grep -c "#### begin VeTouchDisplay" "$configFile") == 0 ]; then
+    logMessage "activating VeTouchDisplay settings in $configFile"
+    
+    echo "#### begin VeTouchDisplay" >> "$configFile" 
+    echo "# Elecrow RC050 5 inch HDMI 800 x 480 Capacitive Touch LCD Display for Raspberry Pi/ PC/ SONY PS4" >> "$configFile"
+    echo "# https://www.elecrow.com/wiki/index.php?title=RC050_5_inch_HDMI_800_x_480_Capacitive_Touch_LCD_Display_for_Raspberry_Pi/_PC/_SONY_PS4" >> "$configFile"
+    echo "hdmi_force_hotplug=1" >> "$configFile"
+    echo "max_usb_current=1" >> "$configFile"
+    echo "hdmi_drive=1" >> "$configFile"
+    echo "hdmi_group=2" >> "$configFile"
+    echo "hdmi_mode=1" >> "$configFile"
+    echo "hdmi_mode=87" >> "$configFile"
+    echo "hdmi_cvt=800 480 60 6 0 0 0" >> "$configFile"
+    echo "display_rotate=$display_rotate" >> "$configFile"
+    echo "framebuffer_width=800" >> "$configFile"
+    echo "framebuffer_height=480" >> "$configFile"
+    echo "# for backlight on / off" >> "$configFile"
+    echo "# gpio-led overlay allows to invert the backlight (echo 0 for on and 1 for off, like backlight blanking)" >> "$configFile"
+    echo "dtoverlay=gpio-led,gpio=$gpioPin,label=backlight,active_low=1" >> "$configFile" 
+    # comment dtoverlay=vc4-kms-v3c for raspberrypi4 if active
+    if [ $machine == "raspberrypi4" ]; then
+      if [ $(grep -c "^\s*dtoverlay=vc4-kms-v3c" "$configFile") != 0 ]; then
+        logMessage "disabling dtoverlay=vc4-kms-v3c on Raspberry Pi 4"
+        sed -i 's/^\s*dtoverlay=vc4-kms-v3c/#dtoverlay=vc4-kms-v3c/g' "$configFile"
+        rebootNeeded=true
+      fi
     fi
-	
-	# enable screen saver (blanking) from the Venus
-	if [ "$gpioPin" != "" ]; then
-		if [ ! -e "$blankDeviceFile" ] || [ $(grep -c "/sys/class/leds/backlight/brightness" "$blankDeviceFile") == 0 ]; then
-			logMessage "setting display blanking to GPIO pin $gpioPin"
-			echo "/sys/class/leds/backlight/brightness" > "$blankDeviceFile"
-			restartGui=true
-		fi
-	fi
-	if [ -e $headlessFlag ]; then
-        logMessage "activating local GUI"
-        rm -f $headlessFlag
-		rebootNeeded=true
+    echo "#### end VeTouchDisplay" >> "$configFile"
+    echo "" >> "$configFile"
+    rebootNeeded=true
+  fi
+  # enable screen saver (blanking) from the Venus
+  if [ "$gpioPin" != "" ]; then
+    if [ ! -e "$blankDeviceFile" ] || [ $(grep -c "/sys/class/leds/backlight/brightness" "$blankDeviceFile") == 0 ]; then
+      logMessage "setting display blanking to GPIO pin $gpioPin"
+      echo "/sys/class/leds/backlight/brightness" > "$blankDeviceFile"
+      restartGui=true
     fi
-
+  fi
+  if [ -e $headlessFlag ]; then
+    logMessage "activating local GUI"
+    rm -f $headlessFlag
+    rebootNeeded=true
+  fi
 fi
 
 # uninstalling - check scriptAction again
 # if an install step failed package needs to be removed
 if [ $scriptAction == 'UNINSTALL' ] ; then
-	logMessage "++ Uninstalling display setup"
-    if [ -e "$blankDeviceFile" ]; then
-        logMessage "disabling display blanking"
-        rm -f "$blankDeviceFile"
-        restartGui=true
-    fi
-	if [ ! -f "/etc/venus/headless" ]; then
-		echo
-		logMessage "DISABLING LOCAL GUI - reverts to console"
-		echo
-		touch "/etc/venus/headless"
-		rebootNeeded=true
-	fi
-	logMessage "restoring previous overlay file"
-	restoreActiveFile "$overlayFile"
+  logMessage "++ Uninstalling display setup"
+  if [ -e "$blankDeviceFile" ]; then
+      logMessage "disabling display blanking"
+      rm -f "$blankDeviceFile"
+      restartGui=true
+  fi
+  if [ ! -f "/etc/venus/headless" ]; then
+    echo
+    logMessage "DISABLING LOCAL GUI - reverts to console"
+    echo
+    touch "/etc/venus/headless"
+    rebootNeeded=true
+  fi
+  logMessage "restoring previous overlay file"
+  restoreActiveFile "$overlayFile"
 
-    # remove mods from configFile - do not use restore in case other mods were made manually
-    if [ -f "$configFile" ]; then
-        if [ $(grep -c "#### begin VeTouchDisplay" "$configFile") != 0 ]; then
-            sed -i -e '/#### begin VeTouchDisplay/,/#### end VeTouchDisplay/d' "$configFile"
-            rebootNeeded=true
-        fi
-    fi
+  # remove mods from configFile - do not use restore in case other mods were made manually
+  if [ -f "$configFile" ]; then
+      if [ $(grep -c "#### begin VeTouchDisplay" "$configFile") != 0 ]; then
+          sed -i -e '/#### begin VeTouchDisplay/,/#### end VeTouchDisplay/d' "$configFile"
+          rebootNeeded=true
+      fi
+  fi
 fi
 
 # thats all folks - SCRIPT EXITS INSIDE THE FUNCTION
